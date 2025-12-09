@@ -1,3 +1,4 @@
+<!-- Author: Ratheesh G Kumar, Software Engineer, Team CurrencyXnge_fintech SaaS Product -->
 # CurrencyEx App Documentation
 
 This repository hosts the design specifications, architectural diagrams, and wireframes for **CurrencyEx** — a next-generation Currency Exchange and Remittance platform.
@@ -38,6 +39,20 @@ The detailed tech stack is documented within, including:
 - **Frontend**: React 18 & React Native
 - **Database**: PostgreSQL & Redis
 - **Messaging**: NATS JetStream
+
+## 📂 System Architecture
+
+The documentation is split into specialized architectural guides:
+
+### [🏗️ Backend Architecture](backend-arch/BACKEND_MASTER_DOC.md)
+*   **Microservices**: Auth, Wallet, Rate, Remittance services.
+*   **Database**: PostgreSQL Schema & Redis Caching.
+*   **Infrastructure**: Docker, K8s, CI/CD.
+
+### [🎨 Frontend Architecture](frontend-arch/FRONTEND_MASTER_DOC.md)
+*   **Roles**: Routing for Admin, Teller, Cashier.
+*   **State**: Redux Toolkit & WebSocket Integration.
+*   **Components**: Reusable UI Kit & Remittance Wizard.
 
 ## 📡 Real-time Market Data Integration
 

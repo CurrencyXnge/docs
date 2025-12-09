@@ -1,3 +1,4 @@
+<!-- Author: Ratheesh G Kumar, Software Engineer, Team CurrencyXnge_fintech SaaS Product -->
 # 💸 Remittance Routing & Batch Processing Guide
 
 This document outlines the technical implementation of the **Smart Routing Engine** and **Batch Processing System** used in CurrencyEx to optimize remittance delivery usage.
