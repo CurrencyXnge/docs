@@ -59,7 +59,7 @@ h3 {
 
 .card-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 2rem;
     margin: 2rem 0;
 }
@@ -212,4 +212,52 @@ td {
 th {
     background: rgba(30, 41, 59, 0.9);
     color: var(--accent-color);
+}
+
+/* RESPONSIVE DESIGN (MOBILE) */
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+    }
+
+    h1 {
+        font-size: 2.5rem;
+    }
+
+    h2 {
+        font-size: 1.8rem;
+    }
+
+    /* Stack wireframe grids */
+    .wf-grid-2 {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Make tabs scrollable on small screens */
+    .wf-tabs {
+        overflow-x: auto;
+        white-space: nowrap;
+        padding-bottom: 5px;
+    }
+
+    /* Helper wrapper for tables to scroll */
+    .wireframe-container,
+    .card {
+        overflow-x: auto;
+    }
+
+    table,
+    .wf-table {
+        min-width: 600px;
+        /* Force scroll if too narrow */
+    }
+
+    /* Adjust Navigation Cards */
+    nav.card-grid {
+        margin-top: -1rem !important;
+    }
+
+    header {
+        margin-bottom: 2rem;
+    }
 }

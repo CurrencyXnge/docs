@@ -39,7 +39,29 @@ The detailed tech stack is documented within, including:
 - **Database**: PostgreSQL & Redis
 - **Messaging**: NATS JetStream
 
-## 📂 Structure
+## 📡 Real-time Market Data Integration
+
+The system aggregates live exchange rates from external providers (e.g., Wise, OpenExchangeRates) and creates a normalized rate stream for the internal services.
+
+> **[📄 Read the Detailed Market Data Integration Guide](MARKET_DATA_INTEGRATION.md)**
+
+### Key Features
+*   **Polling Engine**: Fetch rates every 30s.
+*   **Normalization**: Unified data model for all providers.
+*   **Distribution**: Real-time push via NATS and WebSockets.
+
+## 💸 Remittance & Smart Routing
+
+The platform handles global money transfers using a dual-path strategy to balance speed and cost.
+
+> **[📄 Read the Detailed Remittance Routing & Batching Guide](REMITTANCE_BATCHING_GUIDE.md)**
+
+### Core Concepts
+1.  **Instant Path**: Direct API calls to partners (Wise, Ripple) for "Fast" tier payments.
+2.  **Batch Path**: Aggregates "Saver" transactions into CSV/ISO files and uploads via SFTP every hour.
+3.  **Automated Failover**: Robust retry mechanisms and status tracking.
+
+## �📂 Structure
 
 - `index.html` - Main documentation file containing all content and diagrams.
 - `styles.css` - Stylesheet for the documentation page.
