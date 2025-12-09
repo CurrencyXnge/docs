@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CurrencyEx App Documentation</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'neutral' });
+    </script>
+</head>
+
+<body>
+
+    <header>
+        <div class="container">
+            <h1>CashEx App</h1>
+            <p class="subtitle">Next-Gen Currency Exchange & Remittance Platform</p>
+        </div>
+    </header>
+
+    <div class="container">
+
+        <!-- Navigation / Quick Links -->
+        <nav class="card-grid" style="margin-top: -3rem; position: relative; z-index: 10;">
+            <div class="card">
+                <h3>System Overview</h3>
+                <p>Exchange, Remittance, Live Data, and Prepaid Wallet services.</p>
+            </div>
+            <div class="card">
+                <h3>User Roles</h3>
+                <p>Customer, Cashier, Teller, and Super Admin workflows.</p>
+            </div>
+            <div class="card">
+                <h3>Architecture</h3>
+                <p>Go, React, K8s, NATS, implementation details.</p>
+            </div>
+        </nav>
+
+        <!-- Section 1: Features -->
+        <section id="features">
+            <h2>Core Features</h2>
+
+            <div class="card-grid">
+                <div class="card">
+                    <h3>💱 Currency Exchange</h3>
+                    <ul class="feature-list">
+                        <li>Live market rates (30s update)</li>
+                        <li>Configurable Service Charge</li>
+                        <li>Rate Lock (30s validity)</li>
+                        <li>Compliance Limits (Daily/Monthly)</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>🌍 International Remittance</h3>
+                    <ul class="feature-list">
+                        <li>Global Usage (India, UK, USA, etc.)</li>
+                        <li>2-4 Hour Settlement</li>
+                        <li>Real-time WebSocket Tracking</li>
+                        <li>Beneficiary Saver</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>📈 Live Market Data</h3>
+                    <ul class="feature-list">
+                        <li>Redis Caching (60s TTL)</li>
+                        <li>Admin Rate Override (±2%)</li>
+                        <li>External API Integration (Wise/ExchangeRate)</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>💳 Prepaid Wallet</h3>
+                    <ul class="feature-list">
+                        <li>Load Balance & Transact</li>
+                        <li>Min Balance Controls</li>
+                        <li>Auto-deduction</li>
+                        <li>Full Audit Trail</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: Architecture & Diagrams -->
+        <section id="architecture">
+            <h2>System Architecture</h2>
+            <p>High-level overview of the microservices and interaction flow.</p>
+
+            <div class="merchant">
+                <div class="mermaid">
+                    graph TD
+                    subgraph Client_Layer [Client Layer]
+                    MobileApp[Mobile App<br />React Native]
+                    WebApp[Web App<br />React]
+                    AdminDash[Admin Dashboard<br />React 18+]
+                    end
+
+                    subgraph API_Gateway [API Gateway / Load Balancer]
+                    Nginx[Nginx Ingress]
+                    end
+
+                    subgraph Backend_Services [Backend Services - Go 1.21+]
+                    AuthSvc[Auth Service<br />JWT/RBAC]
+                    ExchangeSvc[Exchange Service]
+                    RemitSvc[Remittance Service]
+                    WalletSvc[Wallet Service]
+                    RateSvc[Rate Service]
+                    end
+
+                    subgraph Data_Layer [Data Layer]
+                    Postgres[(PostgreSQL<br />Transactions/Users)]
+                    Redis[(Redis<br />Cache/Rate Limiting)]
+                    end
+
+                    subgraph Message_Bus [Event Bus]
+                    NATS[NATS JetStream]
+                    end
+
+                    subgraph External [External APIs]
+                    ForexAPI[Forex Data API]
+                    PayGateway[Payment Gateway]
+                    end
+
+                    Client_Layer --> Nginx
+                    Nginx --> AuthSvc
+                    Nginx --> ExchangeSvc
+                    Nginx --> RemitSvc
+                    Nginx --> WalletSvc
+
+                    Backend_Services --> Postgres
+                    Backend_Services --> Redis
+                    Backend_Services --> NATS
+                    RateSvc --> ForexAPI
+                    RemitSvc --> PayGateway
+
+                    NATS -.->|Updates| WebApp
+                    NATS -.->|Updates| MobileApp
+                </div>
+            </div>
+
+            <h3>Exchange Process Flow</h3>
+            <div class="mermaid">
+                sequenceDiagram
+                participant User
+                participant App
+                participant RateSvc
+                participant ExchangeSvc
+                participant WalletSvc
+
+                User->>App: Select Source/Target Currency
+                App->>RateSvc: Get Live Rate
+                RateSvc-->>App: Rate + Service Charge
+                User->>App: Confirm Amount (Lock Rate 30s)
+                App->>ExchangeSvc: Initiate Transaction (Locked)
+                ExchangeSvc->>WalletSvc: Check Balance
+                alt Balance Sufficient
+                WalletSvc-->>ExchangeSvc: OK
+                ExchangeSvc->>ExchangeSvc: Execute Exchange
+                ExchangeSvc-->>App: Success Confirmation
+                else Insufficient Funds
+                WalletSvc-->>ExchangeSvc: Fail
+                ExchangeSvc-->>App: Error: Low Balance
+                end
+            </div>
+
+            <h3>Remittance Process Flow</h3>
+            <div class="mermaid">
+                sequenceDiagram
+                participant Sender
+                participant App
+                participant RemitSvc
+                participant WalletSvc
+                participant PayGateway
+
+                Sender->>App: Enter Recipient & Amount
+                App->>RemitSvc: Get Quote (Rate + Fee)
+                RemitSvc-->>App: Total Payable
+                Sender->>App: Confirm & Authenticate
+                App->>RemitSvc: Submit Remittance
+                RemitSvc->>WalletSvc: Lock/Deduct Funds
+                alt Payment Successful
+                WalletSvc-->>RemitSvc: Funds Secured
+                RemitSvc->>PayGateway: Initiate Payout
+                PayGateway-->>RemitSvc: Ack (Processing)
+                RemitSvc-->>App: Transfer In Progress
+                loop Status Check / Webhook
+                PayGateway-->>RemitSvc: Status Update (Credited)
+                end
+                RemitSvc-->>App: Push Notification: Money Sent
+                else Insufficient Funds
+                WalletSvc-->>RemitSvc: Failed
+                RemitSvc-->>App: Error: Insufficient Balance
+                end
+            </div>
+        </section>
+
+        <!-- Section 3: Tech Stack -->
+        <section id="tech-stack">
+            <h2>Technology Stack</h2>
+            <table>
+                <tr>
+                    <th>Component</th>
+                    <th>Technology</th>
+                </tr>
+                <tr>
+                    <td>Backend Language</td>
+                    <td>Go (Golang) 1.21+</td>
+                </tr>
+                <tr>
+                    <td>Database</td>
+                    <td>PostgreSQL</td>
+                </tr>
+                <tr>
+                    <td>Caching</td>
+                    <td>Redis</td>
+                </tr>
+                <tr>
+                    <td>Message Queue</td>
+                    <td>NATS</td>
+                </tr>
+                <tr>
+                    <td>Frontend (Web)</td>
+                    <td>React 18, Redux Toolkit, Tailwind/MUI</td>
+                </tr>
+                <tr>
+                    <td>Frontend (Mobile)</td>
+                    <td>React Native (Expo), NativeBase</td>
+                </tr>
+                <tr>
+                    <td>Infrastructure</td>
+                    <td>Docker, Kubernetes, GitLab CI/CD</td>
+                </tr>
+            </table>
+        </section>
+
+        <!-- Section 4: UI Design Specifications (Digital Wireframes) -->
+        <section id="ui-design">
+            <h2>User Interface Design Drafts</h2>
+            <p>Digital wireframes based on system requirements. These represent the structural layout of the
+                application.</p>
+
+            <!-- SUPER ADMIN WIREFRAME -->
+            <div class="wireframe-container">
+                <span class="wireframe-title">Cashex Super Main Admin Dashboard (Wireframe)</span>
+
+                <div class="wf-grid-2" style="grid-template-columns: 2fr 1fr;">
+                    <!-- LEFT COL -->
+                    <div>
+                        <div class="wf-tabs">
+                            <div class="wf-tab active">Users</div>
+                            <div class="wf-tab">Teller</div>
+                            <div class="wf-tab">Cashier</div>
+                            <div class="wf-tab">Branches</div>
+                        </div>
+
+                        <div class="wf-grid-2">
+                            <div class="wf-box">
+                                <strong>Feature Enables</strong>
+                                <ul style="font-size: 0.8rem; padding-left: 1.2rem;">
+                                    <li>[x] Access Profile</li>
+                                    <li>[x] Edit Profile</li>
+                                    <li>[x] Remittance</li>
+                                    <li>[ ] Request Aid</li>
+                                    <li>[x] Process Waiver</li>
+                                    <li>[ ] Prepaid Change</li>
+                                </ul>
+                            </div>
+                            <div class="wf-box">
+                                <strong>Admin Controls</strong>
+                                <ul style="font-size: 0.8rem; padding-left: 1.2rem;">
+                                    <li>1. Edit Market Price</li>
+                                    <li>2. Approve AML/KYC</li>
+                                    <li>3. Branch Assign</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="wf-box">
+                            <strong>Reports Panel</strong>
+                            <div style="display: flex; gap: 10px; margin-top: 5px;">
+                                <div style="border:1px solid #777; padding:5px; flex:1;">Sales Report</div>
+                                <div style="border:1px solid #777; padding:5px; flex:1;">Profit & Loss</div>
+                                <div style="border:1px solid #777; padding:5px; flex:1;">Balance Sheet</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COL -->
+                    <div>
+                        <div class="wf-box" style="text-align: center;">
+                            <div>Total Exchange Volume</div>
+                            <h2 style="margin: 0; color: #4ade80;">$180,000</h2>
+                            <div style="font-size: 0.8rem; margin-top: 5px;">Active Users: 15</div>
+                        </div>
+
+                        <div class="wf-box">
+                            <strong>Market Price (Live)</strong>
+                            <table class="wf-table">
+                                <tr>
+                                    <th>Currency</th>
+                                    <th>Buy</th>
+                                    <th>Sell</th>
+                                </tr>
+                                <tr>
+                                    <td>AED</td>
+                                    <td>3.68</td>
+                                    <td>3.58</td>
+                                </tr>
+                                <tr>
+                                    <td>AUD</td>
+                                    <td>0.20</td>
+                                    <td>0.16</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div class="wf-box">
+                            <strong>Pending Actions</strong>
+                            <div style="font-size: 0.8rem;">• AML Process Verification</div>
+                            <div style="font-size: 0.8rem;">• KYC Branch Admin Appr.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-grid">
+                <!-- USER WINDOW WIREFRAME -->
+                <div class="wireframe-container">
+                    <span class="wireframe-title">User / Customer Window</span>
+
+                    <div style="display: flex; border-bottom: 2px solid #555; margin-bottom: 10px;">
+                        <div style="padding: 5px 10px; font-weight: bold;">Profile</div>
+                        <div style="padding: 5px 10px; border-bottom: 2px solid var(--accent-color);">Remittance</div>
+                        <div style="padding: 5px 10px;">Exchange</div>
+                        <div style="padding: 5px 10px;">Prepaid</div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div class="wf-box">
+                            <div><strong>Receiver Details</strong></div>
+                            <div style="font-size:0.8rem; color:#aaa;">Name: John Doe</div>
+                            <div style="font-size:0.8rem; color:#aaa;">Acct: **** 1234</div>
+                        </div>
+                        <div class="wf-box">
+                            <div><strong>Bank Details</strong></div>
+                            <div style="font-size:0.8rem; color:#aaa;">Bank: Barclays</div>
+                            <div style="font-size:0.8rem; color:#aaa;">Sort: 20-00-00</div>
+                        </div>
+                    </div>
+
+                    <div class="wf-box">
+                        <strong>Transaction Breakdown</strong>
+                        <table class="wf-table" style="margin-top: 5px;">
+                            <tr>
+                                <td>Amount in GBP</td>
+                                <td style="text-align: right;">535.00</td>
+                            </tr>
+                            <tr>
+                                <td>Rate</td>
+                                <td style="text-align: right;">1.25</td>
+                            </tr>
+                            <tr>
+                                <td>Service Charge</td>
+                                <td style="text-align: right;">5.00</td>
+                            </tr>
+                            <tr style="border-top: 2px solid #777;">
+                                <td><strong>Total Payable</strong></td>
+                                <td style="text-align: right;"><strong>540.00</strong></td>
+                            </tr>
+                        </table>
+                        <div class="wf-btn">CONFIRM TRANSFER</div>
+                    </div>
+                </div>
+
+                <!-- CASHIER WINDOW WIREFRAME -->
+                <div class="wireframe-container">
+                    <span class="wireframe-title">Cashier / Teller Window</span>
+
+                    <div class="wf-tabs">
+                        <div class="wf-tab">Customers</div>
+                        <div class="wf-tab active">Remittance</div>
+                        <div class="wf-tab">Exchange</div>
+                    </div>
+
+                    <div class="wf-box">
+                        <strong>Remittance Processing</strong>
+                        <div style="display: flex; gap: 10px; margin-top:10px;">
+                            <div style="flex: 1;">
+                                <div style="font-size: 0.8rem;">Customer ID</div>
+                                <input type="text" class="wf-input" value="CUST-8821">
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="font-size: 0.8rem;">Sending Amount (GBP)</div>
+                                <input type="text" class="wf-input" value="2000.00">
+                            </div>
+                        </div>
+
+                        <!-- NEW: Receiver Details -->
+                        <div style="margin-top: 15px; padding-top: 10px; border-top: 1px dashed var(--text-secondary);">
+                            <div style="font-size: 0.9rem; margin-bottom: 5px; color: var(--accent-color);">Receiver
+                                Bank Details</div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div>
+                                    <div style="font-size: 0.8rem;">Beneficiary Name</div>
+                                    <input type="text" class="wf-input" value="Jane Smith">
+                                </div>
+                                <div>
+                                    <div style="font-size: 0.8rem;">Bank Name</div>
+                                    <input type="text" class="wf-input" value="Emirates NBD">
+                                </div>
+                                <div>
+                                    <div style="font-size: 0.8rem;">Account No / IBAN</div>
+                                    <input type="text" class="wf-input" value="AE98000...">
+                                </div>
+                                <div>
+                                    <div style="font-size: 0.8rem;">Swift / Sort Code</div>
+                                    <input type="text" class="wf-input" value="EBNBAEAA">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="wf-box">
+                        <strong>Price Breakdown</strong>
+                        <table class="wf-table">
+                            <tr>
+                                <td>Target Currency</td>
+                                <td style="text-align:right;">AED</td>
+                            </tr>
+                            <tr>
+                                <td>Exchange Rate</td>
+                                <td style="text-align:right;">4.65</td>
+                            </tr>
+                            <tr>
+                                <td>Converted Amount</td>
+                                <td style="text-align:right;">9,300.00 AED</td>
+                            </tr>
+                            <tr>
+                                <td>Service Fees</td>
+                                <td style="text-align:right;">15.00 GBP</td>
+                            </tr>
+                            <tr style="font-weight: bold; background: rgba(255,255,255,0.05);">
+                                <td>Total To Collect</td>
+                                <td style="text-align:right; color: #4ade80;">2,015.00 GBP</td>
+                            </tr>
+                        </table>
+                        <div style="display: flex; gap: 5px; margin-top: 10px;">
+                            <div class="wf-btn" style="background: #ef4444;">REJECT / CANCEL</div>
+                            <div class="wf-btn" style="background: #22c55e;">CONFIRM Remittance</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TRANSACTION LOG WIREFRAME -->
+                <div class="wireframe-container" style="grid-column: span 2;">
+                    <span class="wireframe-title">Transaction / Audit Log</span>
+
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <input type="text" class="wf-input" style="flex:1;" placeholder="Search Transaction ID / User">
+                        <div style="display:flex; gap:5px;">
+                            <div class="wf-tab active">All</div>
+                            <div class="wf-tab">Pending</div>
+                            <div class="wf-tab">Completed</div>
+                        </div>
+                    </div>
+
+                    <table class="wf-table">
+                        <thead>
+                            <tr style="background: rgba(255,255,255,0.1);">
+                                <th>Date/Time</th>
+                                <th>Txn ID</th>
+                                <th>User</th>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>24 Oct, 10:42</td>
+                                <td>#TXN-9928</td>
+                                <td>John Doe</td>
+                                <td>Remittance</td>
+                                <td>2000.00 GBP</td>
+                                <td style="color: #facc15;">Processing</td>
+                                <td>[View]</td>
+                            </tr>
+                            <tr>
+                                <td>24 Oct, 09:15</td>
+                                <td>#TXN-9925</td>
+                                <td>Sarah Lee</td>
+                                <td>Exchange</td>
+                                <td>500.00 USD</td>
+                                <td style="color: #4ade80;">Completed</td>
+                                <td>[View]</td>
+                            </tr>
+                            <tr>
+                                <td>23 Oct, 16:20</td>
+                                <td>#TXN-9921</td>
+                                <td>Mike Ross</td>
+                                <td>Wallet Load</td>
+                                <td>100.00 GBP</td>
+                                <td style="color: #ef4444;">Failed</td>
+                                <td>[Retry]</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 5: Development Roadmap & Commercials -->
+        <section id="roadmap-commercials" style="margin-bottom: 4rem;">
+            <h2>Development Roadmap & Commercials</h2>
+            <p>A transparent breakdown of the development stages, timeline, and investment required.</p>
+
+            <div class="card-grid">
+
+                <!-- Timeline & Phases -->
+                <div class="card" style="grid-column: span 2;">
+                    <h3>🚀 Development Stages</h3>
+                    <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
+
+                        <div style="display: flex; border-left: 2px solid var(--accent-color); padding-left: 1rem;">
+                            <div style="width: 120px; font-weight: bold; color: var(--accent-color);">Phase 1</div>
+                            <div style="flex: 1;">
+                                <strong>Discovery & UI/UX Design (Weeks 1-2)</strong><br>
+                                <span style="font-size: 0.9rem; color: var(--text-secondary);">Requirement freezing,
+                                    Wireframing, High-fidelity Mockups (Admin & Mobile).</span>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; border-left: 2px solid var(--primary-color); padding-left: 1rem;">
+                            <div style="width: 120px; font-weight: bold; color: var(--primary-color);">Phase 2</div>
+                            <div style="flex: 1;">
+                                <strong>Core Development (Web & Backend) (Weeks 3-6)</strong><br>
+                                <span style="font-size: 0.9rem; color: var(--text-secondary);">Database Setup, API
+                                    Development (Go), Admin Dashboard (React), Exchange Logic.</span>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; border-left: 2px solid #a855f7; padding-left: 1rem;">
+                            <div style="width: 120px; font-weight: bold; color: #a855f7;">Phase 3</div>
+                            <div style="flex: 1;">
+                                <strong>Mobile App Development (Weeks 7-10)</strong><br>
+                                <span style="font-size: 0.9rem; color: var(--text-secondary);">React Native
+                                    implementation for iOS/Android, Biometrics, Push Notifications.</span>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; border-left: 2px solid #22c55e; padding-left: 1rem;">
+                            <div style="width: 120px; font-weight: bold; color: #22c55e;">Phase 4</div>
+                            <div style="flex: 1;">
+                                <strong>Testing & Deployment (Week 11-12)</strong><br>
+                                <span style="font-size: 0.9rem; color: var(--text-secondary);">Security Audit, Load
+                                    Testing, Play Store/App Store Submission, Go Live.</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Investment Summary -->
+                <div class="card"
+                    style="background: linear-gradient(135deg, rgba(37, 99, 235, 0.2), rgba(15, 23, 42, 0.8)); border: 1px solid var(--primary-color);">
+                    <h3>💎 Investment Summary</h3>
+                    <div style="text-align: center; padding: 2rem 0;">
+                        <p style="margin: 0; color: var(--text-secondary);">Total Development Cost</p>
+                        <h2 style="margin: 0.5rem 0; font-size: 2.5rem; color: #fff;">₹ 3.5L - 4.0L</h2>
+                        <p style="font-size: 0.9rem; color: var(--accent-color);">(One-time Cost)</p>
+                    </div>
+                    <strong>Inclusions:</strong>
+                    <ul class="feature-list" style="font-size: 0.9rem;">
+                        <li>Full Source Code Ownership</li>
+                        <li>Web, Admin, & Mobile Apps (Android/iOS)</li>
+                        <li>1 Year Free Technical Support</li>
+                        <li>Server Deployment & Training</li>
+                    </ul>
+                </div>
+
+            </div>
+
+            <!-- Competitive Analysis -->
+            <h3>⚖️ Competitive Analysis (vs CEBS / SaaS)</h3>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 40%;">Feature / Aspect</th>
+                            <th
+                                style="background: rgba(37, 99, 235, 0.3); color: white; border-bottom: 2px solid var(--primary-color);">
+                                Our Solution (Custom)</th>
+                            <th style="background: rgba(100, 116, 139, 0.2);">Competitors (e.g., CEBS)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Cost Structure</strong></td>
+                            <td style="background: rgba(37, 99, 235, 0.1); font-weight: bold; color: #4ade80;">₹3.5L -
+                                ₹4.0L (One-time)</td>
+                            <td>Subscriptions (Start ~₹40k/yr Basic) <br> + High Setup Fees for Enterprise</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Ownership</strong></td>
+                            <td style="background: rgba(37, 99, 235, 0.1);"><strong>100% You Own the Code</strong></td>
+                            <td>License Only (Rented Software)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Customization</strong></td>
+                            <td style="background: rgba(37, 99, 235, 0.1);">Fully Tailored to Your Workflow</td>
+                            <td>Limited to Platform Features</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Mobile App</strong></td>
+                            <td style="background: rgba(37, 99, 235, 0.1);">Included (Native iOS/Android)</td>
+                            <td>Often Extra / Separate Module</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Long Term Value (5 Years)</strong></td>
+                            <td style="background: rgba(37, 99, 235, 0.1);">High (No Recurring License Fees)</td>
+                            <td>Lower Initial, but recurring costs add up</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </section>
+
+    </div>
+
+    <footer style="text-align: center; padding: 4rem 0; color: var(--text-secondary);">
+        <p>&copy; 2026 CashEx App Documentation</p>
+    </footer>
+
+</body>
+
+</html>
