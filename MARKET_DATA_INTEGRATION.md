@@ -1,3 +1,4 @@
+<!-- Author: Ratheesh G Kumar, Software Engineer, Team CurrencyXnge_fintech SaaS Product -->
 # 📡 Real-time Market Data Integration Guide
 
 This document details the architectural implementation, configuration, and developer workflows for integrating real-time currency exchange rates into the **CashEx** platform.
