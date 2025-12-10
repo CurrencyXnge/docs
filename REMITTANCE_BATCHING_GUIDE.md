@@ -24,7 +24,7 @@ graph TD
     %% Batch Path
     Router -->|Tier=NORMAL| DB[(DB: Pending Queue)]
     
-    subgraph Cron_Job [Batch Processor (Every 1 Hour)]
+    subgraph Cron_Job ["Batch Processor (Every 1 Hour)"]
         Job[Ticker] --> Fetch[Fetch Pending Txns]
         Fetch --> Group[Group by Currency]
         Group --> Gen[Generate CSV/XML]
