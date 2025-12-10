@@ -54,6 +54,16 @@ The documentation is split into specialized architectural guides:
 *   **State**: Redux Toolkit & WebSocket Integration.
 *   **Components**: Reusable UI Kit & Remittance Wizard.
 
+### [⚖️ UK Compliance & KYC](UK_COMPLIANCE_KYC_AML.md)
+*   FCA Regulated Framework (MLR 2017).
+*   Risk Scoring Engine & SAR Reporting.
+*   Purpose Codes & Transaction Limits.
+
+### [🌍 Wise Remittance & MSB Guide](WISE_REMITTANCE_INTEGRATION.md)
+*   **Single Provider**: Deep integration with Wise Platform.
+*   **MSB Explained**: Regulatory roles and safeguarding.
+*   **Liquidity**: Pre-funding models and balance monitoring.
+
 ## 📡 Real-time Market Data Integration
 
 The system aggregates live exchange rates from external providers (e.g., Wise, OpenExchangeRates) and creates a normalized rate stream for the internal services.

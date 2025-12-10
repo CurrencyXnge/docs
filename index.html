@@ -201,29 +201,20 @@
             </div>
 
             <h3>Smart Routing & Batching Logic</h3>
-            <p>The system intelligently routes transactions based on urgency ("Fast" vs "Normal") to optimize for speed
-                or cost.</p>
+            <p>The system optimizes remittance delivery usage using <strong>Wise Platform</strong> as the sole provider.
+            </p>
+
             <div class="mermaid">
                 graph TD
                 Start([New Remittance]) --> Validate{Validation OK?}
                 Validate -- No --> Reject([Reject Txn])
-                Validate -- Yes --> Router{Routing Engine}
+                Validate -- Yes --> CheckBal{Wise Float OK?}
 
-                %% FAST PATH
-                Router -->|Tier: FAST / PREMIUM| InstantPath[Direct API Gateway]
-                InstantPath -->|Provider: Wise/Ripple| API_Partner[Instant Settlement Partner]
-                API_Partner -->|Real-time| Beneficiary
+                CheckBal -->|Yes: > £5000| InstantPath[Direct API Payout]
+                InstantPath -->|Provider: Wise| API_Partner[Beneficiary]
 
-                %% BATCH PATH
-                Router -->|Tier: NORMAL / SAVER| DB[(Batch Queue Table)]
-
-                subgraph Batch_Processor [Batch Processing Job]
-                DB -->|Cron: Every 1 Hour| Aggregator[Aggregator Service]
-                Aggregator -->|Group by Currency| BatchGen[Generate Batch File CSV/ISO]
-                BatchGen -->|Secure Upload| SFTP_Broker[Correspondent Broker / Bank]
-                end
-
-                SFTP_Broker -.->|Settlement T+1| Beneficiary
+                CheckBal -->|No: Low Float| Alert[Alert Treasury]
+                Alert --> Batch[Queue for Manual Funding]
             </div>
         </section>
 
