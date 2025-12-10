@@ -200,22 +200,43 @@
                 end
             </div>
 
-            <h3>Smart Routing & Batching Logic</h3>
-            <p>The system optimizes remittance delivery usage using <strong>Wise Platform</strong> as the sole provider.
-            </p>
+            <h3>Global Routing Engine Strategy</h3>
+            <p>The system intelligently routes international payments by dynamically selecting the best provider based on speed, cost, and corridor availability. We use a tiered waterfall model incorporating <strong>Wise</strong>, <strong>CurrencyCloud</strong>, and <strong>Ripple</strong>.</p>
 
             <div class="mermaid">
                 graph TD
-                Start([New Remittance]) --> Validate{Validation OK?}
-                Validate -- No --> Reject([Reject Txn])
-                Validate -- Yes --> CheckBal{Wise Float OK?}
+                Start([Route Request]) --> AML{AML Check Pass?}
+                AML -- No --> Stop([Reject])
+                AML -- Yes --> Urgency{Urgency Tier?}
 
-                CheckBal -->|Yes: > £5000| InstantPath[Direct API Payout]
-                InstantPath -->|Provider: Wise| API_Partner[Beneficiary]
+                %% FAST PATH
+                Urgency -- FAST --> TryWise{Wise Available?}
+                TryWise -- Yes --> UseWise[Route: Wise]
+                TryWise -- No --> TryRipple{RippleNet Live?}
+                TryRipple -- Yes --> UseRipple[Route: RippleNet]
+                TryRipple -- No --> UseCC[Route: CurrencyCloud]
 
-                CheckBal -->|No: Low Float| Alert[Alert Treasury]
-                Alert --> Batch[Queue for Manual Funding]
+                %% NORMAL PATH
+                Urgency -- NORMAL --> TryRipple2{RippleNet Live?}
+                TryRipple2 -- Yes --> UseRipple2[Route: RippleNet]
+                TryRipple2 -- No --> TryCC{CurrencyCloud Live?}
+                TryCC -- Yes --> UseCC2[Route: CurrencyCloud]
+                TryCC -- No --> UseWise2[Route: Wise]
+
+                UseWise --> Exec[Execute Payout]
+                UseRipple --> Exec
+                UseCC --> Exec
+                UseWise2 --> Exec
+                UseRipple2 --> Exec
+                UseCC2 --> Exec
             </div>
+
+            <p><strong>Provider Selection Logic:</strong></p>
+            <ul class="feature-list">
+                <li><strong>Wise (TransferWise)</strong>: Preferred for speed and mid-market rates on consumer corridors.</li>
+                <li><strong>CurrencyCloud</strong>: Primary for B2B, reliable FX, and broad compliance coverage (180+ countries).</li>
+                <li><strong>RippleNet</strong>: Utilized for instant liquidity in exotic or high-friction corridors (e.g., UK -> Philippines/Mexico).</li>
+            </ul>
         </section>
 
         <!-- Section 3: Tech Stack -->
